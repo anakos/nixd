@@ -1,0 +1,11 @@
+[package]
+name = "nixd"
+version = "0.1.0"
+authors = ["Alex Nakos <anakos@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+async-std   = { version = "1.6.2", features = ["unstable", "attributes"] }
+clap        = "3.0.0-beta.1"
+stop-token  = "0.1.2"
+termcolor   = "1.1.0"
