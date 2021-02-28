@@ -1,27 +1,29 @@
 use {
     crate::types as nixd,
-    async_std::{
-        prelude::*,
-        stream,
-        sync::{self, channel},
-        task,
-    },
     std::io::{self, Write},
+    stream_cancel::{StreamExt,Trigger, Tripwire,},
     termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor},
+    tokio::{
+        spawn,
+        sync::mpsc,
+        task,
+        time::interval,
+    },
+    tokio_stream::wrappers::IntervalStream,
 };
 
 /// Responsible for executing commands and drawing progress on the screen.
 #[derive(Debug)]
 pub struct Executor {
-    sender: sync::Sender<Status>,
+    sender: mpsc::Sender<Status>,
     handle: task::JoinHandle<io::Result<()>>,
 }
 impl Executor {
     pub fn init() -> Self {
-        let (sender, mut recv) = channel::<Status>(10);
-        let handle = task::spawn(async move {
+        let (sender, mut rx) = mpsc::channel::<Status>(10);
+        let handle = spawn(async move {
             let mut stdout = StandardStream::stdout(ColorChoice::Always);
-            while let Some(val) = recv.next().await {
+            while let Some(val) = rx.recv().await {
                 match val {
                     Status::Start(text) => {
                         stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
@@ -56,7 +58,7 @@ impl Executor {
     where
         F: FnOnce() -> nixd::Result<()>,
     {
-        self.sender.send(Status::Start(label)).await;
+        self.sender.send(Status::Start(label)).await.unwrap();
 
         let progress_indicator = ProgressIndicator::start(self.sender.clone());
         let result = match cmd() {
@@ -65,7 +67,7 @@ impl Executor {
         };
 
         drop(progress_indicator);
-        self.sender.send(result).await;
+        self.sender.send(result).await?;
 
         Ok(())
     }
@@ -73,13 +75,8 @@ impl Executor {
     pub async fn terminate(self) -> nixd::Result<()> {
         drop(self.sender);
 
-        if let Err(e) = self.handle.await {
-            Err(nixd::Error::BadShit {
-                message: format!("error writing to stdout: {}", e),
-            })
-        } else {
-            Ok(())
-        }
+        self.handle.await??;
+        Ok(())
     }
 }
 
@@ -94,20 +91,22 @@ enum Status {
 /// This is a visual progress indicator
 struct ProgressIndicator {
     _handle: task::JoinHandle<()>,
-    _kill_switch: stop_token::StopSource,
+    _kill_switch: Trigger,
 }
 impl ProgressIndicator {
-    fn start(my_sender: sync::Sender<Status>) -> ProgressIndicator {
-        let _kill_switch = stop_token::StopSource::new();
-        let mut my_stream = _kill_switch
-            .stop_token()
-            .stop_stream(stream::interval(std::time::Duration::from_millis(500)).fuse());
-        let _handle = task::spawn(async move {
+    fn start(my_sender: mpsc::Sender<Status>) -> ProgressIndicator {
+        let (_kill_switch, tripwire) = Tripwire::new();
+
+        let mut my_stream =
+            IntervalStream::new(interval(std::time::Duration::from_millis(500)))
+                .take_until_if(tripwire);
+
+        let _handle = spawn(async move {
             loop {
-                if my_stream.next().await.is_none() {
+                if let None = tokio_stream::StreamExt::next(&mut my_stream).await {
                     break;
                 }
-                my_sender.send(Status::Continue).await;
+                my_sender.send(Status::Continue).await.unwrap();
             }
         });
 

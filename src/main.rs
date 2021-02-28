@@ -5,7 +5,7 @@ mod types;
 
 use clap::Clap;
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> types::Result<()> {
     let opts = opts::Opts::parse();
     let executor = executor::Executor::init();
