@@ -10,4 +10,3 @@ in
 {
   overlays = [ mozilla-overlay ];
 }
-

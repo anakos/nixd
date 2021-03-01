@@ -1,5 +1,5 @@
 {
-  cfg ? { },
+  cfg ? import ./config.nix,
 }:
 let
   sources         =

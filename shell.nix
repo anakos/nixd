@@ -1,5 +1,5 @@
 let
-  pkgs = import ./nixpkgs.nix { cfg = import ./config.nix; };
+  pkgs = import ./nixpkgs.nix { };
 
   rust =
     pkgs.rustChannels.stable.rust.override {
