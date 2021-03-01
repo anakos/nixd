@@ -1,11 +1,13 @@
 [package]
-name = "nixd"
-version = "0.1.0"
+name    = "nixd"
+version = "0.1.1"
 authors = ["Alex Nakos <anakos@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-async-std   = { version = "1.6.2", features = ["unstable", "attributes"] }
-clap        = "3.0.0-beta.1"
-stop-token  = "0.1.2"
-termcolor   = "1.1.0"
+clap          = "3.0.0-beta.1"
+stream-cancel = "0.8.0"
+termcolor     = "1.1.2"
+thiserror     = "1.0.23"
+tokio         = { version = "1.2.0", features = ["full"] }
+tokio-stream  = "0.1.3"

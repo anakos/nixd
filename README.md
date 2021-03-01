@@ -7,9 +7,7 @@ It effectively automates the steps defined in [this excellent blog post](https:/
 
 While my very own personal nix workflow is still very much a work in progress, this workflow is pretty close to what I do everytime I start a new, local project.
 
-# Installation
-
-## Prerequisites
+# Prerequisites
 
 The following programs are assumed to be installed and accessible on the user path:
 
@@ -19,6 +17,12 @@ The following programs are assumed to be installed and accessible on the user pa
 
 I am running NixOS locally and have the lorri dameon running as a service in the backgrounnd.  
 
+## Installation
+
+In order to install nixd, checkout this prohect and run nix-env -i nixd -f ./default.nix
+
 ## Building
 
-# Running
+## Running
+
+In the directory you want to `nix`, simply run `nixd`.

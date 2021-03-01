@@ -24,13 +24,32 @@ impl From<std::str::Utf8Error> for Error {
         }
     }
 }
-impl From<std::io::Error> for Error {
+impl From<std::io::Error> for Error
+{
     fn from(err: std::io::Error) -> Self {
         let message = format!("io error: {}", err);
         Self::CommandFailed { message }
     }
 }
-impl std::fmt::Display for Error {
+impl<T> From<tokio::sync::mpsc::error::SendError<T>> for Error
+{
+    fn from(err: tokio::sync::mpsc::error::SendError<T>) -> Self
+    {
+        let message = format!("error sending to channel: {}", err);
+        Self::BadShit { message }        
+    }
+}
+impl From<tokio::task::JoinError> for Error
+{
+    fn from(err: tokio::task::JoinError) -> Self
+    {
+        let message = format!("error joining to current thread: {}", err);
+        Self::BadShit { message }        
+    }
+}
+
+impl std::fmt::Display for Error
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let msg = match self {
             Self::BadArgs { message } => message,
